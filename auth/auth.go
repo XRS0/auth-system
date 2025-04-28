@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/XRS0/auth-system/auth/models"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -31,7 +32,12 @@ func New(config *Config) (*Auth, error) {
 		config.TokenDuration = 24 * time.Hour
 	}
 
-	handler := NewAuthHandler(config.DB, config.JWTSecret, config.TokenDuration)
+	err := config.DB.AutoMigrate(&models.User{})
+	if err != nil {
+		return nil, err
+	}
+
+	handler := CreateAuthHandler(config.DB, config.JWTSecret, config.TokenDuration)
 	return &Auth{
 		config:  config,
 		handler: handler,

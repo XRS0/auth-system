@@ -16,6 +16,8 @@ vendor/
 
 # Go workspace file
 go.work
+go.mod
+go.sum
 
 # Environment variables
 .env

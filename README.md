@@ -7,14 +7,48 @@
 - Регистрация и вход пользователей
 - Аутентификация на основе JWT
 - Хеширование паролей с использованием bcrypt
-- Поддержка базы данных SQLite
+- Поддержка различных баз данных (SQLite, PostgreSQL, MySQL)
 - Валидация запросов
 - Защищенные маршруты с middleware
+
+## Поддерживаемые базы данных
+
+### SQLite
+```go
+import "gorm.io/driver/sqlite"
+
+db, err := gorm.Open(sqlite.Open("auth.db"), &gorm.Config{})
+```
+
+### PostgreSQL
+```go
+import "gorm.io/driver/postgres"
+
+dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+```
+
+### MySQL
+```go
+import "gorm.io/driver/mysql"
+
+dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+```
 
 ## Установка
 
 ```bash
+# Для SQLite
 go get github.com/XRS0/auth-system
+
+# Для PostgreSQL
+go get github.com/XRS0/auth-system
+go get gorm.io/driver/postgres
+
+# Для MySQL
+go get github.com/XRS0/auth-system
+go get gorm.io/driver/mysql
 ```
 
 ## Использование
@@ -31,7 +65,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/gorm"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlite" // или postgres/mysql
 	"github.com/XRS0/auth-system/auth"
 )
 
@@ -40,7 +74,17 @@ func main() {
 		log.Fatal("Ошибка загрузки .env файла")
 	}
 
+	// Пример для SQLite
 	db, err := gorm.Open(sqlite.Open("auth.db"), &gorm.Config{})
+	
+	// Пример для PostgreSQL
+	// dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+	// db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	
+	// Пример для MySQL
+	// dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+	// db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
 	if err != nil {
 		log.Fatal("Ошибка подключения к базе данных:", err)
 	}

@@ -4,25 +4,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/XRS0/auth-system/auth/models"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
-
-type RegisterRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
-	Name     string `json:"name" validate:"required"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
-}
-
-type LoginResponse struct {
-	Token string `json:"token"`
-}
 
 type AuthHandler struct {
 	db            *gorm.DB
@@ -30,7 +16,7 @@ type AuthHandler struct {
 	tokenDuration time.Duration
 }
 
-func NewAuthHandler(db *gorm.DB, jwtSecret string, tokenDuration time.Duration) *AuthHandler {
+func CreateAuthHandler(db *gorm.DB, jwtSecret string, tokenDuration time.Duration) *AuthHandler {
 	return &AuthHandler{
 		db:            db,
 		jwtSecret:     jwtSecret,
@@ -39,7 +25,12 @@ func NewAuthHandler(db *gorm.DB, jwtSecret string, tokenDuration time.Duration) 
 }
 
 func (h *AuthHandler) Register(c echo.Context) error {
-	var req RegisterRequest
+	var req struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required,min=6"`
+		Name     string `json:"name" validate:"required"`
+	}
+
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
@@ -48,18 +39,18 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return err
 	}
 
-	var existingUser User
+	var existingUser models.User
 	if err := h.db.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		return echo.NewHTTPError(http.StatusConflict, "Email already exists")
 	}
 
-	user := User{
+	user := &models.User{
 		Email:    req.Email,
 		Password: req.Password,
 		Name:     req.Name,
 	}
 
-	if err := h.db.Create(&user).Error; err != nil {
+	if err := h.db.Create(user).Error; err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create user")
 	}
 
@@ -69,7 +60,11 @@ func (h *AuthHandler) Register(c echo.Context) error {
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
-	var req LoginRequest
+	var req struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required"`
+	}
+
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
@@ -78,7 +73,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	var user User
+	var user models.User
 	if err := h.db.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid email or password")
 	}
@@ -97,7 +92,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate token")
 	}
 
-	return c.JSON(http.StatusOK, LoginResponse{
+	return c.JSON(http.StatusOK, struct {
+		Token string `json:"token"`
+	}{
 		Token: tokenString,
 	})
 }
@@ -105,7 +102,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 func (h *AuthHandler) GetProfile(c echo.Context) error {
 	userID := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)["sub"].(float64)
 
-	var user User
+	var user models.User
 	if err := h.db.First(&user, uint(userID)).Error; err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "User not found")
 	}
