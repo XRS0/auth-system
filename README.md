@@ -1,23 +1,23 @@
-# Auth System
+# Система аутентификации
 
-A simple authentication system for Go applications using Echo framework and GORM.
+Простая система аутентификации для Go-приложений, использующая фреймворк Echo и ORM GORM.
 
-## Features
+## Возможности
 
-- User registration and login
-- JWT-based authentication
-- Password hashing with bcrypt
-- SQLite database support
-- Request validation
-- Protected routes with middleware
+- Регистрация и вход пользователей
+- Аутентификация на основе JWT
+- Хеширование паролей с использованием bcrypt
+- Поддержка базы данных SQLite
+- Валидация запросов
+- Защищенные маршруты с middleware
 
-## Installation
+## Установка
 
 ```bash
-go get github.com/pya4k/auth-system
+go get github.com/XRS0/auth-system
 ```
 
-## Usage
+## Использование
 
 ```go
 package main
@@ -32,17 +32,17 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
-	"github.com/pya4k/auth-system/auth"
+	"github.com/XRS0/auth-system/auth"
 )
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Ошибка загрузки .env файла")
 	}
 
 	db, err := gorm.Open(sqlite.Open("auth.db"), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Fatal("Ошибка подключения к базе данных:", err)
 	}
 
 	e := echo.New()
@@ -57,7 +57,7 @@ func main() {
 
 	authInstance, err := auth.New(authConfig)
 	if err != nil {
-		log.Fatal("Failed to initialize auth:", err)
+		log.Fatal("Ошибка инициализации аутентификации:", err)
 	}
 
 	authInstance.RegisterRoutes(e)
@@ -68,36 +68,98 @@ func main() {
 
 ## API Endpoints
 
-### Register
-- **POST** `/register`
-- Request body:
-```json
-{
-    "email": "user@example.com",
-    "password": "password123",
-    "name": "User Name"
-}
+### Регистрация
+- **Метод**: `POST`
+- **Путь**: `/register`
+- **Заголовки**:
+  ```http
+  Content-Type: application/json
+  ```
+- **Тело запроса**:
+  ```json
+  {
+      "email": "user@example.com",
+      "password": "password123",
+      "name": "Имя пользователя"
+  }
+  ```
+- **Успешный ответ** (201 Created):
+  ```json
+  {
+      "message": "Пользователь успешно зарегистрирован"
+  }
+  ```
+- **Ошибки**:
+  - 400 Bad Request: Неверное тело запроса
+  - 409 Conflict: Email уже существует
+  - 500 Internal Server Error: Ошибка создания пользователя
+
+### Вход
+- **Метод**: `POST`
+- **Путь**: `/login`
+- **Заголовки**:
+  ```http
+  Content-Type: application/json
+  ```
+- **Тело запроса**:
+  ```json
+  {
+      "email": "user@example.com",
+      "password": "password123"
+  }
+  ```
+- **Успешный ответ** (200 OK):
+  ```json
+  {
+      "token": "ваш.jwt.токен"
+  }
+  ```
+- **Ошибки**:
+  - 400 Bad Request: Неверное тело запроса
+  - 401 Unauthorized: Неверный email или пароль
+  - 500 Internal Server Error: Ошибка генерации токена
+
+### Получение профиля
+- **Метод**: `GET`
+- **Путь**: `/api/profile`
+- **Заголовки**:
+  ```http
+  Authorization: Bearer <ваш-jwt-токен>
+  ```
+- **Успешный ответ** (200 OK):
+  ```json
+  {
+      "email": "user@example.com",
+      "name": "Имя пользователя"
+  }
+  ```
+- **Ошибки**:
+  - 401 Unauthorized: Отсутствует или неверный токен
+  - 404 Not Found: Пользователь не найден
+
+## Конфигурация
+
+Библиотека требует следующие переменные окружения:
+- `JWT_SECRET`: Секретный ключ для генерации JWT токенов
+
+## Примеры использования с curl
+
+```bash
+# Регистрация
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123","name":"Имя пользователя"}'
+
+# Вход
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123"}'
+
+# Получение профиля (замените <токен> на JWT токен из ответа на вход)
+curl http://localhost:8080/api/profile \
+  -H "Authorization: Bearer <токен>"
 ```
 
-### Login
-- **POST** `/login`
-- Request body:
-```json
-{
-    "email": "user@example.com",
-    "password": "password123"
-}
-```
-
-### Get Profile
-- **GET** `/api/profile`
-- Requires Authorization header with JWT token
-
-## Configuration
-
-The library requires the following environment variables:
-- `JWT_SECRET`: Secret key for JWT token generation
-
-## License
+## Лицензия
 
 MIT 
