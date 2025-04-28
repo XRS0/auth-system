@@ -203,7 +203,3 @@ curl -X POST http://localhost:8080/login \
 curl http://localhost:8080/api/profile \
   -H "Authorization: Bearer <токен>"
 ```
-
-## Лицензия
-
-MIT 
